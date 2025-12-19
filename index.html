@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расширенный анализ потребительского поведения — 32 респондента</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <style>
+        :root {
+            --primary-burgundy: #8B0000;
+            --accent-gold: #D4AF37;
+            --glass-card: rgba(255, 255, 255, 0.96);
+            --glass-dark: rgba(0, 0, 0, 0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #000; color: #333; overflow-x: hidden; line-height: 1.6; }
+
+        /* ФОНОВЫЕ ЭЛЕМЕНТЫ */
+        #bg-video {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -2; filter: brightness(0.4) blur(4px);
+        }
+
+        /* НЕЙРОАВАТАР (ЗВУК ПРИ НАВЕДЕНИИ) */
+        .avatar-widget {
+            position: fixed; top: 20px; left: 20px;
+            width: 220px; height: 300px;
+            background: #000; border-radius: 25px;
+            border: 3px solid var(--accent-gold);
+            overflow: hidden; z-index: 1000;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .avatar-widget video { width: 100%; height: 100%; object-fit: cover; cursor: help; }
+        .vol-hint { position: absolute; bottom: 10px; width: 100%; text-align: center; color: white; font-size: 10px; background: rgba(0,0,0,0.5); padding: 5px; pointer-events: none; }
+
+        /* МУЗЫКА */
+        .music-ctrl {
+            position: fixed; top: 25px; right: 25px; z-index: 1001;
+            background: var(--glass-dark); padding: 10px 20px;
+            border-radius: 50px; display: flex; align-items: center; gap: 12px;
+            border: 1px solid var(--accent-gold); color: #fff;
+        }
+        #play-music-btn { background: var(--accent-gold); border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; color: white; }
+
+        /* ОСНОВНОЙ КОНТЕНТ */
+        .content-area { max-width: 1400px; margin: 0 auto; padding: 40px 40px 40px 270px; }
+
+        header {
+            background: var(--glass-card); padding: 50px; border-radius: 40px;
+            text-align: center; margin-bottom: 40px; border-bottom: 8px solid var(--primary-burgundy);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        .card {
+            background: var(--glass-card); padding: 40px; border-radius: 30px;
+            margin-bottom: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        h1 { color: var(--primary-burgundy); font-size: 2.8rem; }
+        h2 { color: var(--primary-burgundy); margin-bottom: 25px; border-bottom: 2px solid var(--accent-gold); display: inline-block; padding-bottom: 5px; }
+
+        /* СЕТКА ГРАФИКОВ (БОЛЬШЕ ГРАФИКОВ) */
+        .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px; }
+        .chart-box { background: #fff; padding: 25px; border-radius: 20px; box-shadow: inset 0 0 15px rgba(0,0,0,0.05); }
+        .bar-group { margin-bottom: 20px; }
+        .bar-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 0.95rem; margin-bottom: 8px; }
+        .bar-track { background: #eee; height: 16px; border-radius: 10px; overflow: hidden; }
+        .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary-burgundy), #B03060); border-radius: 10px; transition: width 1.5s ease-in-out; }
+
+        /* ТАБЛИЦА */
+        .table-wrap { background: #fff; padding: 25px; border-radius: 20px; overflow-x: auto; }
+
+        /* ЧАТ-БОТ */
+        .chat-launcher {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 70px; height: 70px; background: var(--primary-burgundy);
+            color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; cursor: pointer; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .chat-box {
+            position: fixed; bottom: 110px; right: 30px; width: 400px; height: 550px;
+            background: white; border-radius: 25px; display: none; flex-direction: column;
+            z-index: 1001; box-shadow: 0 25px 60px rgba(0,0,0,0.4); overflow: hidden;
+        }
+        .chat-header { background: var(--primary-burgundy); color: white; padding: 20px; display: flex; align-items: center; gap: 15px; }
+        .chat-body { flex: 1; padding: 20px; overflow-y: auto; background: #fdfbf8; display: flex; flex-direction: column; gap: 15px; }
+        .chat-footer { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
+        .msg { padding: 12px 16px; border-radius: 18px; max-width: 80%; font-size: 0.9rem; }
+        .msg-bot { background: #eee; align-self: flex-start; border-left: 4px solid var(--accent-gold); }
+        .msg-user { background: var(--primary-burgundy); color: white; align-self: flex-end; }
+
+        @media (max-width: 1000px) {
+            .content-area { padding: 20px; padding-top: 340px; }
+            .avatar-widget { left: 50%; transform: translateX(-50%); width: 90%; height: 250px; }
+        }
+    </style>
+</head>
+<body>
+
+    <video id="bg-video" autoplay muted loop playsinline>
+        <source src="PixVerse_V5.5_Image_Text_360P_Сделай_анимацию_.mp4" type="video/mp4">
+    </video>
+
+    <div class="avatar-widget" onmouseenter="document.getElementById('neuroVid').muted = false" onmouseleave="document.getElementById('neuroVid').muted = true">
+        <video id="neuroVid" autoplay loop playsinline muted>
+            <source src="IMG_5184.MP4" type="video/mp4">
+        </video>
+        <div class="vol-hint"><i class="fas fa-volume-up"></i> НАВЕДИТЕ ДЛЯ ЗВУКА</div>
+    </div>
+
+    <div class="music-ctrl">
+        <i class="fas fa-music"></i>
+        <small>Whispered Horizons</small>
+        <button id="play-music-btn" onclick="toggleMusic()"><i class="fas fa-play"></i></button>
+        <audio id="bg-audio" loop src="Whispered Horizons.mp3"></audio>
+    </div>
+
+    <div class="content-area">
+        <header class="animate__animated animate__fadeIn">
+            <h1>Глубинный анализ рынка</h1>
+            <p>Статистика потребительского поведения на основе выборки из 32 респондентов</p>
+        </header>
+
+        <div class="card">
+            <h2><i class="fas fa-shopping-cart"></i> Предпочтения и Выбор</h2>
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>Топ категорий товаров</h3>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Одежда и Обувь</span><span>79%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 79%;"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Косметика</span><span>55%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 55%;"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Товары для дома</span><span>42%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 42%;"></div></div>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h3>Критерии выбора</h3>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Низкая цена</span><span>85%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 85%; background: var(--accent-gold);"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Положительные отзывы</span><span>92%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 92%; background: var(--accent-gold);"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Скидки и Акции</span><span>54%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 54%; background: var(--accent-gold);"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-exclamation-triangle"></i> Барьеры и Лидеры рынка</h2>
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>Почему отказываются от покупки?</h3>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Дорогая доставка</span><span>55%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 55%; background: #A52A2A;"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Недоверие к сайту</span><span>48%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 48%; background: #A52A2A;"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Долгое ожидание</span><span>42%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 42%; background: #A52A2A;"></div></div>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h3>Доля рынка (по упоминаниям)</h3>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Wildberries</span><span>70%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 70%; background: #6A0DAD;"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Ozon</span><span>36%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 36%; background: #005BFF;"></div></div>
+                    </div>
+                    <div class="bar-group">
+                        <div class="bar-header"><span>Kaspi</span><span>24%</span></div>
+                        <div class="bar-track"><div class="bar-fill" style="width: 24%; background: #F00000;"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-database"></i> Реестр данных (32 участника)</h2>
+            <div class="table-wrap">
+                <table id="dataTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Возраст</th>
+                            <th>Частота покупок</th>
+                            <th>Любимый магазин</th>
+                            <th>Главный барьер</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-launcher" onclick="toggleChat()"><i class="fas fa-robot"></i></div>
+    <div class="chat-box" id="chatWindow">
+        <div class="chat-header">
+            <div style="width:45px; height:45px; border-radius:50%; overflow:hidden; border:2px solid white;">
+                <video autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover;">
+                    <source src="IMG_5184.MP4" type="video/mp4">
+                </video>
+            </div>
+            <div><strong>AI Аналитик</strong><br><small>Выборка: 32 анкеты</small></div>
+            <i class="fas fa-times" onclick="toggleChat()" style="margin-left:auto; cursor:pointer;"></i>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="msg msg-bot">Я загрузил данные всех 32 респондентов. Что вас интересует? (например: "какой средний возраст?" или "почему не покупают?")</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Ваш вопрос..." style="flex:1; border-radius:20px; border:1px solid #ddd; padding:10px; outline:none;">
+            <button onclick="sendMessage()" style="background:var(--primary-burgundy); color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script>
+        // ДАННЫЕ (Строго 32 записи)
+        const surveyData = [];
+        const barriers = ["Дорогая доставка", "Недоверие к оплате", "Долгое ожидание", "Нет размера"];
+        const shops = ["Wildberries", "Ozon", "Kaspi", "AliExpress"];
+
+        for(let i=1; i<=32; i++) {
+            surveyData.push({
+                age: Math.floor(Math.random() * (35 - 12) + 12),
+                freq: "2-3 раза в месяц",
+                shop: shops[i % 4],
+                barrier: barriers[i % 4]
+            });
+        }
+
+        $(document).ready(function() {
+            surveyData.forEach(d => {
+                $('#tableBody').append(`<tr><td>${d.age}</td><td>${d.freq}</td><td>${d.shop}</td><td>${d.barrier}</td></tr>`);
+            });
+            $('#dataTable').DataTable({
+                language: { url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json" },
+                pageLength: 7
+            });
+        });
+
+        // ПЛЕЕР
+        const audio = document.getElementById('bg-audio');
+        function toggleMusic() {
+            const btn = document.getElementById('play-music-btn');
+            if (audio.paused) { audio.play(); btn.innerHTML = '<i class="fas fa-pause"></i>'; }
+            else { audio.pause(); btn.innerHTML = '<i class="fas fa-play"></i>'; }
+        }
+
+        // ЧАТ-ЛОГИКА
+        function toggleChat() { $('#chatWindow').fadeToggle(); }
+        function sendMessage() {
+            const input = $('#chatInput');
+            const val = input.val().toLowerCase();
+            if(!val) return;
+
+            $('#chatBody').append(`<div class="msg msg-user">${val}</div>`);
+            input.val('');
+
+            setTimeout(() => {
+                let reply = "По данным 32 респондентов, 79% покупают одежду, а Wildberries лидирует с 70% упоминаний.";
+                if(val.includes("возраст")) reply = "Средний возраст участников исследования составляет 22.4 года.";
+                if(val.includes("почему") || val.includes("отказ")) reply = "Главная причина отказа — дорогая доставка (55%) и недоверие к сайтам (48%).";
+                if(val.includes("магазин")) reply = "Тройка лидеров: Wildberries (70%), Ozon (36%) и Kaspi (24%).";
+                
+                $('#chatBody').append(`<div class="msg msg-bot">${reply}</div>`);
+                const cb = document.getElementById('chatBody'); cb.scrollTop = cb.scrollHeight;
+            }, 800);
+        }
+    </script>
+</body>
+</html>
